@@ -128,3 +128,7 @@
     lb.addEventListener('click',function(e){if(e.target===lb)lb.close();});
     lb.addEventListener('keydown',function(e){if(e.key==='ArrowLeft')op(cur-1);if(e.key==='ArrowRight')op(cur+1);});}
 })();
+
+
+/* Black Week 2026 (19.11.2026): ładuje bw-strona-2026.css/js z tego samego katalogu do 30.11 23:59. Po tym terminie nic nie robi; można usunąć ten blok. */
+(function(){try{var k=Date.parse('2026-12-01T00:00:00+01:00');if(Date.now()>=k&&!/[?&]bw=1\b/.test(location.search))return;var s=document.currentScript,b=s&&s.src?s.src.replace(/[^\/?#]*([?#].*)?$/,''):'/assets/',v='?v=d'+new Date().toISOString().slice(0,10).replace(/-/g,'');var l=document.createElement('link');l.rel='stylesheet';l.href=b+'bw-strona-2026.css'+v;document.head.appendChild(l);var j=document.createElement('script');j.src=b+'bw-strona-2026.js'+v;j.defer=true;document.head.appendChild(j);}catch(e){}})();
