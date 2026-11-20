@@ -132,3 +132,37 @@
 
 /* Black Week 2026 (19.11.2026): ładuje bw-strona-2026.css/js z tego samego katalogu do 30.11 23:59. Po tym terminie nic nie robi; można usunąć ten blok. */
 (function(){try{var k=Date.parse('2026-12-01T00:00:00+01:00');if(Date.now()>=k&&!/[?&]bw=1\b/.test(location.search))return;var s=document.currentScript,b=s&&s.src?s.src.replace(/[^\/?#]*([?#].*)?$/,''):'/assets/',v='?v=d'+new Date().toISOString().slice(0,10).replace(/-/g,'');var l=document.createElement('link');l.rel='stylesheet';l.href=b+'bw-strona-2026.css'+v;document.head.appendChild(l);var j=document.createElement('script');j.src=b+'bw-strona-2026.js'+v;j.defer=true;document.head.appendChild(j);}catch(e){}})();
+
+/* Ścieżka klienta (20.11.2026, Centrum zapleczy): telefon, e-mail, przyciski rezerwacji, kroki silnika Previo
+   (lista, koszyk, formularz, zakup) -> GA4 tej domeny (gtag, Consent Mode) + dataLayer (GTM) + Clarity (po zgodzie). */
+(function(){
+  if (window.__sciezkaKlienta) return; window.__sciezkaKlienta = 1;
+  function wyslij(n, p){
+    p = p || {};
+    for (var k in p) if (p[k] === undefined || p[k] === null || p[k] === '') delete p[k];
+    try { if (window.gtag) gtag('event', n, p); } catch(e){}
+    try { var d = {event: 'z_' + n}; for (var k2 in p) d[k2] = p[k2]; (window.dataLayer = window.dataLayer || []).push(d); } catch(e){}
+    try { if (window.clarity) { clarity('event', n); clarity('set', 'ostatni_krok', n); } } catch(e){}
+  }
+  function miejsce(a){ var s = a.closest('section,header,footer,nav,aside,[id]'); return s ? (s.id || s.className && String(s.className).split(' ')[0] || s.tagName.toLowerCase()) : ''; }
+  document.addEventListener('click', function(e){
+    var a = e.target && e.target.closest && e.target.closest('a'); if (!a) return;
+    var h = a.getAttribute('href') || '';
+    var t = (a.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 60);
+    if (/^tel:/i.test(h)) wyslij('tel_click', {miejsce: miejsce(a), link_text: t});
+    else if (/^mailto:/i.test(h)) wyslij('email_click', {miejsce: miejsce(a)});
+    else if (/\/rezerwacja\//.test(h)) wyslij('cta_rezerwacja', {miejsce: miejsce(a), link_text: t, strona: location.pathname});
+    else if (a.hostname && a.hostname !== location.hostname) wyslij('click_out', {link_domain: a.hostname});
+  }, true);
+  var mapa = {available_bookings: 'view_item_list'}, zakupy = {};
+  window.addEventListener('message', function(e){
+    if (e.origin !== 'https://booking.previo.app' || typeof e.data !== 'string' || e.data.indexOf('measureGTMEvent:') !== 0) return;
+    var j; try { j = JSON.parse(e.data.slice(16)); } catch(x){ return; }
+    var n = mapa[j.event] || j.event; if (!n) return;
+    var ec = j.ecommerce || {}, r = j.reservation || {};
+    if (n === 'purchase') { var id = ec.transaction_id || ec.id || ''; if (zakupy[id]) return; zakupy[id] = 1; }
+    wyslij(n, {currency: ec.currency || 'PLN', value: ec.value, items: ec.items, transaction_id: ec.transaction_id, tax: ec.tax,
+      silnik_previo: j.form_configuration_id, przyjazd: r.arrival, wyjazd: r.departure});
+    if (n === 'purchase') { try { if (window.clarity) clarity('upgrade', 'rezerwacja'); } catch(x){} }
+  });
+})();
